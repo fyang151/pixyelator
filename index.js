@@ -32,7 +32,7 @@ function imageUrlToImageElement(imageUrl) {
 
 function arrayBufferToImageElement(arrayBuffer) {
   const blob = new Blob([arrayBuffer], { type: "image/png" });
-  blobToImageElement(blob);
+  return blobToImageElement(blob);
 }
 
 function canvasToBlob(canvas) {
@@ -118,7 +118,7 @@ export class Pixyelator {
     yPixels,
     maxWorkers = null,
     customCanvasId = null,
-    isGrayScale = false
+    isGrayScale = false,
   }) {
     this.fromElement(
       imgInput,
@@ -140,7 +140,7 @@ export class Pixyelator {
     yPixels,
     maxWorkers = null,
     customCanvasId = null,
-    isGrayScale = false
+    isGrayScale = false,
   }) {
     return this.fromElement(
       imgInput,
@@ -162,7 +162,7 @@ export class Pixyelator {
     yPixels,
     maxWorkers = null,
     customCanvasId = null,
-    isGrayScale = false
+    isGrayScale = false,
   }) {
     return this.fromElement(
       imgInput,
@@ -184,7 +184,7 @@ export class Pixyelator {
     yPixels,
     maxWorkers = null,
     customCanvasId = null,
-    isGrayScale = false
+    isGrayScale = false,
   }) {
     return this.fromElement(
       imgInput,

@@ -32,7 +32,7 @@ onmessage = (e) => {
     width,
     height,
     outerValue,
-    isGrayScale,
+    grayscale,
     innerValues,
     shouldAllocateByRows,
   ] = e.data;
@@ -54,7 +54,7 @@ onmessage = (e) => {
 
     const [r, g, b, a] = getSingleRGBA(imageData.data);
 
-    if (isGrayScale) {
+    if (grayscale) {
       // luminance formula
       const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
       ctx.fillStyle = `rgba(${luminance}, ${luminance}, ${luminance}, ${a})`;

@@ -1,11 +1,34 @@
+function convertToImageElement(image) {
+  switch (true) {
+    case image instanceof HTMLImageElement:
+      return image;
+    case image instanceof Blob:
+      return blobToImageElement(image);
+    case typeof image === "string" && image.startsWith("data:"):
+      return dataURLToImageElement(image);
+    case typeof image === "string":
+      return imageUrlToImageElement(image);
+    case image instanceof ArrayBuffer:
+      return arrayBufferToImageElement(image);
+    default:
+      throw new Error("Unsupported image type");
+  }
+}
+
 function blobToImageElement(blob) {
   const url = URL.createObjectURL(blob);
   const img = document.createElement("img");
   img.src = url;
 
   return new Promise((resolve, reject) => {
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(img);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(img);
+    };
   });
 }
 
@@ -63,221 +86,107 @@ function canvasToArrayBuffer(canvas) {
   });
 }
 
-function convertToImageElement(image) {
-  switch (true) {
-    case image instanceof HTMLImageElement:
-      return image;
-    case image instanceof Blob:
-      return blobToImageElement(image);
-    case typeof image === "string" && image.startsWith("data:"):
-      return dataURLToImageElement(image);
-    case typeof image === "string":
-      return imageUrlToImageElement(image);
-    case image instanceof ArrayBuffer:
-      return arrayBufferToImageElement(image);
-    default:
-      console.error("Unsupported image type");
-      return;
-  }
-}
-
-function convertToOutputType(canvas, outputType) {
-  switch (outputType) {
-    case null:
-      return;
-    case "element":
-      return canvas;
-    case "blob":
-      return canvasToBlob(canvas);
-    case "dataURL":
-      return canvasToDataURL(canvas);
-    case "arrayBuffer":
-      return canvasToArrayBuffer(canvas);
-    default:
-      return canvas;
-  }
-}
-
-/**
- * @typedef {Object} ConvertOptions
- * @property {*} imgInput - The image input to convert.
- * @property {number} xPixels - The width in pixels.
- * @property {number} yPixels - The height in pixels.
- * @property {number|null} [maxWorkers=null] - The maximum number of workers to use.
- * @property {string|null} [customCanvasId=null] - The ID of the custom canvas to use.
- */
-
 export class Pixyelator {
-  /**
-   * No Output
-   * @param {ConvertOptions} options - The options for conversion.
-   */
-  static convert({
-    imgInput,
-    xPixels,
-    yPixels,
-    maxWorkers = null,
-    customCanvasId = null,
-    isGrayScale = false,
-  }) {
-    this.fromElement(
-      imgInput,
-      xPixels,
-      yPixels,
-      null,
-      maxWorkers,
-      customCanvasId,
-      isGrayScale
-    );
+  constructor(imageElement, options = {}) {
+    this._imageElement = imageElement;
+    this._width = imageElement.naturalWidth;
+    this._height = imageElement.naturalHeight;
+    this._maxWorkers = options.maxWorkers || navigator.hardwareConcurrency || 4;
+    this._canvas = options.targetCanvas || document.createElement("canvas");
+    this._isDisposed = false;
   }
-
   /**
-   * @param {ConvertOptions} options - The options for conversion.
+   * Factory method to create Pixyelator instance from various image sources
+   * @param {string|Blob|ArrayBuffer|HTMLImageElement} imageSource - Image source
+   * @param {Object} [options={}] - Configuration options
+   * @param {number} [options.maxWorkers] - Maximum number of web workers to use (defaults to navigator.hardwareConcurrency or 4)
+   * @param {HTMLCanvasElement} [options.targetCanvas] - Canvas to write pixelation results to
+   * @returns {Promise<Pixyelator>} New Pixyelator instance
    */
-  static toElement({
-    imgInput,
-    xPixels,
-    yPixels,
-    maxWorkers = null,
-    customCanvasId = null,
-    isGrayScale = false,
-  }) {
-    return this.fromElement(
-      imgInput,
-      xPixels,
-      yPixels,
-      "element",
-      maxWorkers,
-      customCanvasId,
-      isGrayScale
-    );
-  }
+  static async fromImage(imageSource, options = {}) {
+    const imageElement = await convertToImageElement(imageSource);
 
-  /**
-   * @param {ConvertOptions} options - The options for conversion.
-   */
-  static toBlob({
-    imgInput,
-    xPixels,
-    yPixels,
-    maxWorkers = null,
-    customCanvasId = null,
-    isGrayScale = false,
-  }) {
-    return this.fromElement(
-      imgInput,
-      xPixels,
-      yPixels,
-      "blob",
-      maxWorkers,
-      customCanvasId,
-      isGrayScale
-    );
-  }
-
-  /**
-   * @param {ConvertOptions} options - The options for conversion.
-   */
-  static toDataURL({
-    imgInput,
-    xPixels,
-    yPixels,
-    maxWorkers = null,
-    customCanvasId = null,
-    isGrayScale = false,
-  }) {
-    return this.fromElement(
-      imgInput,
-      xPixels,
-      yPixels,
-      "dataURL",
-      maxWorkers,
-      customCanvasId,
-      isGrayScale
-    );
-  }
-
-  /**
-   * @param {ConvertOptions} options - The options for conversion.
-   */
-  static toArrayBuffer({
-    imgInput,
-    xPixels,
-    yPixels,
-    maxWorkers = null,
-    customCanvasId = null,
-    isGrayScale = false,
-  }) {
-    return this.fromElement(
-      imgInput,
-      xPixels,
-      yPixels,
-      "arrayBuffer",
-      maxWorkers,
-      customCanvasId,
-      isGrayScale
-    );
-  }
-
-  static async fromElement(
-    imgInput,
-    xPixels,
-    yPixels,
-    outputType,
-    maxWorkers,
-    customCanvasId,
-    isGrayScale
-  ) {
-    const imgElement = await convertToImageElement(imgInput);
-
-    if (!imgElement) {
-      return;
+    if (!imageElement) {
+      throw new Error("Failed to load image");
     }
 
-    const width = imgElement.naturalWidth;
-    const height = imgElement.naturalHeight;
+    if (imageElement.naturalWidth === 0 || imageElement.naturalHeight === 0) {
+      throw new Error("Invalid image dimensions");
+    }
 
-    const displayCanvas = await this._pixelateElement(
-      imgElement,
-      width,
-      height,
-      xPixels,
-      yPixels,
-      maxWorkers,
-      customCanvasId,
-      isGrayScale
-    );
-    return convertToOutputType(displayCanvas, outputType);
+    return new Pixyelator(imageElement, options);
   }
 
-  static _pixelateElement(
-    element,
-    width,
-    height,
-    xPixels,
-    yPixels,
-    maxWorkers,
-    customCanvasId,
-    isGrayScale
-  ) {
+  /**
+   * Pixelate the image and write to the target canvas
+   * @param {number} xPixels - Number of horizontal pixels/blocks
+   * @param {number} yPixels - Number of vertical pixels/blocks
+   * @param {Object} [options={}] - Pixelation options
+   * @param {boolean} [options.grayscale] - Whether to convert the image to grayscale
+   * @returns {Promise & ChainableMethods} Promise with chainable output methods
+   */
+  pixelate(xPixels, yPixels, options = {}) {
+    if (this._isDisposed) {
+      throw new Error("Cannot operate on disposed Pixyelator instance");
+    }
+
+    if (
+      !Number.isInteger(xPixels) ||
+      !Number.isInteger(yPixels) ||
+      xPixels <= 0 ||
+      yPixels <= 0
+    ) {
+      throw new Error("Pixel dimensions must be positive integers");
+    }
+
+    if (xPixels > this._width || yPixels > this._height) {
+      throw new Error("Pixel dimensions cannot exceed image dimensions");
+    }
+
+    const pixelatePromise = this._pixelateElementToCanvas(
+      xPixels,
+      yPixels,
+      options
+    );
+
+    const chainable = Object.assign(pixelatePromise, {
+      toBlob: async () => {
+        await pixelatePromise;
+        return this.toBlob();
+      },
+
+      toCanvas: async () => {
+        await pixelatePromise;
+        return this.toCanvas();
+      },
+
+      toDataURL: async () => {
+        await pixelatePromise;
+        return this.toDataURL();
+      },
+
+      toArrayBuffer: async () => {
+        await pixelatePromise;
+        return this.toArrayBuffer();
+      },
+    });
+
+    return chainable;
+  }
+
+  async _pixelateElementToCanvas(xPixels, yPixels, options = {}) {
+    const element = this._imageElement;
+    const width = this._width;
+    const height = this._height;
+    const maxWorkers = this._maxWorkers;
+    const grayscale = options.grayscale || false;
+
     return new Promise((resolve) => {
-      if (xPixels > width || yPixels > height) {
-        console.error("Number of pixels exceeds the dimensions of the image.");
-        return;
-      }
+      const canvas = this._canvas;
+      const ctx = canvas.getContext("2d");
 
-      let displayCanvas = "";
-
-      if (customCanvasId) {
-        displayCanvas = document.getElementById(customCanvasId);
-      } else {
-        displayCanvas = document.createElement("canvas");
-      }
-
-      const displayCtx = displayCanvas.getContext("2d");
-
-      displayCanvas.width = width;
-      displayCanvas.height = height;
+      canvas.width = width;
+      canvas.height = height;
 
       const shouldAllocateByRows = xPixels > yPixels;
 
@@ -302,10 +211,6 @@ export class Pixyelator {
         individualSectionHeights[
           Math.floor(i * (yPixels / heightRemainderPixels))
         ]++;
-      }
-
-      if (!maxWorkers) {
-        maxWorkers = navigator.hardwareConcurrency;
       }
 
       const workerArray = [];
@@ -362,7 +267,7 @@ export class Pixyelator {
               width,
               height,
               outerValue,
-              isGrayScale,
+              grayscale,
               innerValues,
               shouldAllocateByRows,
             ]);
@@ -392,15 +297,71 @@ export class Pixyelator {
               ? [0, outerDimension]
               : [outerDimension, 0];
 
-            displayCtx.drawImage(result, x, y);
+            ctx.drawImage(result, x, y);
             resolvedTasks++;
             if (resolvedTasks === outerValues.length) {
-              resolve(displayCanvas);
               workerArray.forEach((worker) => worker.terminate());
+              resolve();
             }
           });
         }
       }
     });
+  }
+
+  /**
+   * Get the canvas element containing the pixelated image
+   * @returns {HTMLCanvasElement} The canvas element
+   */
+  toCanvas() {
+    if (this._isDisposed) {
+      throw new Error("Cannot operate on disposed Pixyelator instance");
+    }
+    return this._canvas;
+  }
+
+  /**
+   * Convert the pixelated image to a Blob
+   * @returns {Promise<Blob>} Promise resolving to a Blob containing the image data
+   */
+  async toBlob() {
+    if (this._isDisposed) {
+      throw new Error("Cannot operate on disposed Pixyelator instance");
+    }
+    return canvasToBlob(this._canvas);
+  }
+
+  /**
+   * Convert the pixelated image to a data URL
+   * @returns {string} Data URL string containing the image data
+   */
+  toDataURL() {
+    if (this._isDisposed) {
+      throw new Error("Cannot operate on disposed Pixyelator instance");
+    }
+    return canvasToDataURL(this._canvas);
+  }
+
+  /**
+   * Convert the pixelated image to an ArrayBuffer
+   * @returns {Promise<ArrayBuffer>} Promise resolving to an ArrayBuffer containing the image data
+   */
+  async toArrayBuffer() {
+    if (this._isDisposed) {
+      throw new Error("Cannot operate on disposed Pixyelator instance");
+    }
+    return canvasToArrayBuffer(this._canvas);
+  }
+
+  /**
+   * Clean up resources and dispose of the instance
+   */
+  dispose() {
+    if (this._isDisposed) return;
+
+    this._imageElement = null;
+    this._canvas = null;
+
+    this._isDisposed = true;
   }
 }

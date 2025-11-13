@@ -6,11 +6,13 @@
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "test:debug": "playwright test --debug",
-    "test:report": "playwright show-report"
+    "test:report": "playwright show-report",
+    "build": "node scripts/build.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",
-    "http-server": "^14.1.1"
+    "http-server": "^14.1.1",
+    "terser": "^5.44.1"
   },
   "keywords": [
     "image",
@@ -21,13 +23,13 @@
   "author": "fyang151",
   "license": "MIT",
   "description": "Web based pixelation library with custom pixel quantities.",
-  "main": "index.js",
+  "main": "dist/index.min.js",
   "exports": {
     ".": {
-      "import": "./index.js",
-      "default": "./index.js"
+      "import": "./dist/index.min.js",
+      "default": "./dist/index.min.js"
     },
-    "./innerWorker.js": "./innerWorker.js"
+    "./innerWorker.js": "./dist/innerWorker.min.js"
   },
   "repository": {
     "type": "git",

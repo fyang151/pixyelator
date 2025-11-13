@@ -1,7 +1,6 @@
 {
   "name": "pixyelator",
   "version": "1.0.0",
-  "description": "Image pixelation library with OOP design",
   "type": "module",
   "scripts": {
     "test": "playwright test",
@@ -19,6 +18,23 @@
     "canvas",
     "web-workers"
   ],
-  "author": "",
-  "license": "MIT"
+  "author": "fyang151",
+  "license": "MIT",
+  "description": "Web based pixelation library with custom pixel quantities.",
+  "main": "index.js",
+  "exports": {
+    ".": {
+      "import": "./index.js",
+      "default": "./index.js"
+    },
+    "./innerWorker.js": "./innerWorker.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fyang151/pixyelator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/fyang151/pixyelator/issues"
+  },
+  "homepage": "https://github.com/fyang151/pixyelator#readme"
 }

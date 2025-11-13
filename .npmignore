@@ -1,4 +1,5 @@
 *
 !README.md
-dist/
+!dist/index.min.js
+!dist/innerWorker.min.js
 !package.json

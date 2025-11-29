@@ -106,6 +106,10 @@ export class Pixyelator {
   static async fromImage(imageSource, options = {}) {
     const imageElement = await convertToImageElement(imageSource);
 
+    if (options.maxWorkers && options.maxWorkers < 1) {
+      throw new Error("Max workers must be a natural number");
+    }
+
     if (!imageElement) {
       throw new Error("Failed to load image");
     }

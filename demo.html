@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pixyelator Example</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Fredoka", sans-serif;
+        font-size: 1.25rem;
+        padding: 2rem;
+      }
+      h1 {
+        font-weight: 400;
+      }
+      .controls {
+        margin: 1rem 0;
+        font-style: italic;
+      }
+      label {
+        margin-right: 1rem;
+      }
+      input[type="number"] {
+        width: 80px;
+        font-size: 1rem;
+        font-family: inherit;
+      }
+      .timer {
+        color: #666;
+      }
+      .error {
+        color: #e74c3c;
+      }
+      .warning {
+        color: #999;
+        font-size: 0.9rem;
+      }
+      .canvases {
+        display: flex;
+        gap: 2rem;
+        flex-wrap: wrap;
+      }
+      .canvas-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Pixyelator</h1>
+    <p>A pixelation tool built for the browser.</p>
+
+    <div class="controls">
+      <label>
+        X Pixels:
+        <input type="number" id="xPixels" value="16" />
+      </label>
+      <label>
+        Y Pixels:
+        <input type="number" id="yPixels" value="16" />
+      </label>
+      <label> <input type="checkbox" id="grayscale" /> Grayscale </label>
+      <div class="timer" id="timer"></div>
+      <span class="error" id="error"></span>
+    </div>
+
+    <div class="canvases">
+      <div class="canvas-container">
+        <span>Original</span>
+        <canvas id="original"></canvas>
+      </div>
+      <div class="canvas-container">
+        <span>Pixelated</span>
+        <canvas id="pixelated"></canvas>
+      </div>
+    </div>
+
+    <div class="controls">
+      <label>
+        Max Workers:
+        <input type="number" id="maxWorkers" value="4" />
+      </label>
+      <span class="warning"
+        >Changing this will recreate the Pixyelator instance.</span
+      >
+    </div>
+
+    <script type="module">
+      import { Pixyelator } from "./index.js";
+
+      const xInput = document.getElementById("xPixels");
+      const yInput = document.getElementById("yPixels");
+      const grayscaleCheckbox = document.getElementById("grayscale");
+      const maxWorkersInput = document.getElementById("maxWorkers");
+      const originalCanvas = document.getElementById("original");
+      const pixelatedCanvas = document.getElementById("pixelated");
+      const timerEl = document.getElementById("timer");
+      const errorEl = document.getElementById("error");
+
+      const imageSrc = "./assets/frutiger.png";
+
+      const img = new Image();
+      img.src = imageSrc;
+      await new Promise((resolve) => (img.onload = resolve));
+
+      const ctx = originalCanvas.getContext("2d");
+      originalCanvas.width = img.naturalWidth;
+      originalCanvas.height = img.naturalHeight;
+      ctx.drawImage(img, 0, 0);
+
+      let pixyelator = await Pixyelator.fromImage(img, {
+        targetCanvas: pixelatedCanvas,
+        maxWorkers: parseInt(maxWorkersInput.value) || 4,
+      });
+
+      async function recreatePixyelator() {
+        try {
+          pixyelator.dispose();
+          pixyelator = await Pixyelator.fromImage(img, {
+            targetCanvas: pixelatedCanvas,
+            maxWorkers: parseInt(maxWorkersInput.value) || 4,
+          });
+          updatePixelation();
+        } catch (err) {
+          errorEl.textContent = err.message;
+          timerEl.textContent = "";
+        }
+      }
+
+      async function updatePixelation() {
+        const x = parseInt(xInput.value);
+        const y = parseInt(yInput.value);
+
+        try {
+          errorEl.textContent = "";
+          const start = performance.now();
+          await pixyelator.pixelate(x, y, {
+            grayscale: grayscaleCheckbox.checked,
+          });
+          const end = performance.now();
+          timerEl.textContent = `Total time: ${(end - start).toFixed(2)}ms`;
+        } catch (err) {
+          errorEl.textContent = err.message;
+          timerEl.textContent = "";
+        }
+      }
+
+      xInput.addEventListener("input", updatePixelation);
+      yInput.addEventListener("input", updatePixelation);
+      grayscaleCheckbox.addEventListener("change", updatePixelation);
+      maxWorkersInput.addEventListener("input", recreatePixyelator);
+
+      updatePixelation();
+    </script>
+  </body>
+</html>

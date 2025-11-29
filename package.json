@@ -27,7 +27,8 @@
   "exports": {
     ".": {
       "import": "./dist/index.min.js",
-      "default": "./dist/index.min.js"
+      "default": "./dist/index.min.js",
+      "types": "./dist/index.d.ts"
     },
     "./innerWorker.js": "./dist/innerWorker.min.js"
   },

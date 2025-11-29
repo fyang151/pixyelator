@@ -2,4 +2,5 @@
 !README.md
 !dist/index.min.js
 !dist/innerWorker.min.js
+!index.d.ts
 !package.json

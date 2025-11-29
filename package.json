@@ -1,6 +1,6 @@
 {
   "name": "pixyelator",
-  "version": "1.0.1-alpha.6767",
+  "version": "1.0.67",
   "type": "module",
   "scripts": {
     "test": "playwright test",

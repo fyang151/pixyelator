@@ -53,6 +53,9 @@ async function build() {
     join(distDir, "innerWorker.min.js"),
     workerMinified.code
   );
+
+  const typesPath = join(projectRoot, "index.d.ts");
+  await fs.copyFile(typesPath, join(distDir, "index.d.ts"));
 }
 
 build().catch(console.error);

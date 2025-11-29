@@ -1,6 +1,7 @@
 ## Pixyelator is a pixelation tool built for the browser.
 
 More specifically, it was built for [nearsight.cc](nearsight.cc).
+See another demo [here](https://fyang151.github.io/pixyelator/).
 
 Pixyelator gets its very creative name because you control exactly how many _x_ and _y_ pixels there are.
 

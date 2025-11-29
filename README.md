@@ -10,7 +10,12 @@ Pixyelator gets its very creative name because you control exactly how many _x_ 
 
 ### Usage Example
 
+```bash
+npm install pixyelator
+```
+
 ```javascript
+import { Pixyelator } from "pixyelator";
 // Create a new Pixyelator instance from an image
 // This will draw results to targetCanvas
 const pixyelator = await Pixyelator.fromImage(

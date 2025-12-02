@@ -91,24 +91,12 @@ export class Pixyelator {
     this._imageElement = imageElement;
     this._width = imageElement.naturalWidth;
     this._height = imageElement.naturalHeight;
-    this._maxWorkers = options.maxWorkers || navigator.hardwareConcurrency || 4;
     this._canvas = options.targetCanvas || document.createElement("canvas");
     this._isDisposed = false;
   }
-  /**
-   * Factory method to create Pixyelator instance from various image sources
-   * @param {string|Blob|ArrayBuffer|HTMLImageElement} imageSource - Image source
-   * @param {Object} [options={}] - Configuration options
-   * @param {number} [options.maxWorkers] - Maximum number of web workers to use (defaults to navigator.hardwareConcurrency or 4)
-   * @param {HTMLCanvasElement} [options.targetCanvas] - Canvas to write pixelation results to
-   * @returns {Promise<Pixyelator>} New Pixyelator instance
-   */
+
   static async fromImage(imageSource, options = {}) {
     const imageElement = await convertToImageElement(imageSource);
-
-    if (options.maxWorkers && options.maxWorkers < 1) {
-      throw new Error("Max workers must be a natural number");
-    }
 
     if (!imageElement) {
       throw new Error("Failed to load image");
@@ -179,138 +167,40 @@ export class Pixyelator {
   }
 
   async _pixelateElementToCanvas(xPixels, yPixels, options = {}) {
-    const element = this._imageElement;
-    const width = this._width;
-    const height = this._height;
-    const maxWorkers = this._maxWorkers;
+    const canvas = this._canvas;
+    canvas.width = this._width;
+    canvas.height = this._height;
+    const ctx = canvas.getContext("2d");
     const grayscale = options.grayscale || false;
 
-    return new Promise((resolve) => {
-      const canvas = this._canvas;
-      const ctx = canvas.getContext("2d");
+    const imageBitmap = await createImageBitmap(this._imageElement);
 
-      canvas.width = width;
-      canvas.height = height;
+    const tinyBitmap = await new Promise((resolve, reject) => {
+      const worker = new Worker(new URL("rgbaWorker.js", import.meta.url));
 
-      const shouldAllocateByRows = xPixels > yPixels;
-
-      const widthRemainderPixels = width % xPixels;
-      const heightRemainderPixels = height % yPixels;
-
-      let individualSectionWidths = Array.from({ length: xPixels }, () =>
-        Math.floor(width / xPixels)
-      );
-
-      for (let i = 0; i < widthRemainderPixels; i++) {
-        individualSectionWidths[
-          Math.floor(i * (xPixels / widthRemainderPixels))
-        ]++;
-      }
-
-      let individualSectionHeights = Array.from({ length: yPixels }, () =>
-        Math.floor(height / yPixels)
-      );
-
-      for (let i = 0; i < heightRemainderPixels; i++) {
-        individualSectionHeights[
-          Math.floor(i * (yPixels / heightRemainderPixels))
-        ]++;
-      }
-
-      const workerArray = [];
-
-      const tasks = [];
-      let resolvedTasks = 0;
-
-      const outerValues = shouldAllocateByRows
-        ? individualSectionHeights
-        : individualSectionWidths;
-
-      const innerValues = shouldAllocateByRows
-        ? individualSectionWidths
-        : individualSectionHeights;
-
-      let outerDimension = 0;
-
-      outerValues.forEach((outerValue) => {
-        tasks.push([outerValue, outerDimension]);
-        outerDimension += outerValue;
-      });
-
-      const maxProcesses = Math.min(tasks.length, maxWorkers);
-
-      for (let i = 0; i < maxProcesses; i++) {
-        nextQueue();
-      }
-
-      function processInnerSlice(
-        outerValue,
-        outerDimension,
-        innerWorker = null
-      ) {
-        const [sliceX, sliceY, sliceWidth, sliceHeight] = shouldAllocateByRows
-          ? [0, outerDimension, width, outerValue]
-          : [outerDimension, 0, outerValue, height];
-        return new Promise((resolve, reject) => {
-          createImageBitmap(
-            element,
-            sliceX,
-            sliceY,
-            sliceWidth,
-            sliceHeight
-          ).then((imageSliceBitmap) => {
-            if (!innerWorker) {
-              innerWorker = new Worker(
-                new URL("innerWorker.js", import.meta.url)
-              );
-              workerArray.push(innerWorker);
-            }
-
-            innerWorker.postMessage([
-              imageSliceBitmap,
-              width,
-              height,
-              outerValue,
-              grayscale,
-              innerValues,
-              shouldAllocateByRows,
-            ]);
-
-            innerWorker.onmessage = (e) => {
-              resolve(e.data);
-              nextQueue(innerWorker);
-            };
-            innerWorker.onerror = (err) => {
-              reject(err);
-              nextQueue(innerWorker);
-            };
-          });
-        });
-      }
-
-      function nextQueue(innerWorker = null) {
-        if (tasks.length > 0) {
-          const [outerValue, outerDimension] = tasks.shift();
-
-          return processInnerSlice(
-            outerValue,
-            outerDimension,
-            innerWorker
-          ).then((result) => {
-            const [x, y] = shouldAllocateByRows
-              ? [0, outerDimension]
-              : [outerDimension, 0];
-
-            ctx.drawImage(result, x, y);
-            resolvedTasks++;
-            if (resolvedTasks === outerValues.length) {
-              workerArray.forEach((worker) => worker.terminate());
-              resolve();
-            }
-          });
+      worker.onmessage = (e) => {
+        worker.terminate();
+        if (e.data.success) {
+          resolve(e.data.bitmap);
+        } else {
+          reject(new Error(e.data.error));
         }
-      }
+      };
+
+      worker.onerror = (err) => {
+        worker.terminate();
+        reject(err);
+      };
+
+      worker.postMessage(
+        [imageBitmap, xPixels, yPixels, grayscale],
+        [imageBitmap]
+      );
     });
+
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(tinyBitmap, 0, 0, this._width, this._height);
+    tinyBitmap.close();
   }
 
   /**

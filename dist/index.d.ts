@@ -8,12 +8,6 @@ export type ImageSource = HTMLImageElement | Blob | ArrayBuffer | string;
  */
 export interface PixyelatorOptions {
   /**
-   * Maximum number of web workers to use for pixelation
-   * @default navigator.hardwareConcurrency || 4
-   */
-  maxWorkers?: number;
-
-  /**
    * Canvas element to write pixelation results to
    * @default A newly created canvas element
    */

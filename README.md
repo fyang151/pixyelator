@@ -22,7 +22,6 @@ const pixyelator = await Pixyelator.fromImage(
   "https://cdn.britannica.com/83/28383-050-33D8DB80/Beaver.jpg",
   {
     targetCanvas: document.getElementById("targetCanvas"),
-    maxWorkers: 4,
   }
 );
 const pixelatedImageDataURL = await pixyelator.pixelate(4, 4).toDataURL();
@@ -61,10 +60,6 @@ _What kind of method is this?: `dispose()`_
 This is a cleanup method. It cleans up resources and disposes of the instance. Call this when you're done to free memory.
 
 ### Options
-
-_What kind of option is this?: `maxWorkers`_
-
-This is a `fromImage` option. It sets the maximum number of web workers for parallel processing. Defaults to `navigator.hardwareConcurrency` or `4`.
 
 _What kind of option is this?: `targetCanvas`_
 

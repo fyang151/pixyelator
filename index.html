@@ -87,15 +87,6 @@
       </div>
     </div>
 
-    <div class="controls">
-      <label>
-        Max Workers:
-        <input type="number" id="maxWorkers" value="4" />
-      </label>
-      <span class="warning"
-        >Changing this will recreate the Pixyelator instance.</span
-      >
-    </div>
 
     <script type="module">
       import { Pixyelator } from "./index.js";
@@ -103,7 +94,6 @@
       const xInput = document.getElementById("xPixels");
       const yInput = document.getElementById("yPixels");
       const grayscaleCheckbox = document.getElementById("grayscale");
-      const maxWorkersInput = document.getElementById("maxWorkers");
       const originalCanvas = document.getElementById("original");
       const pixelatedCanvas = document.getElementById("pixelated");
       const timerEl = document.getElementById("timer");
@@ -122,7 +112,6 @@
 
       let pixyelator = await Pixyelator.fromImage(img, {
         targetCanvas: pixelatedCanvas,
-        maxWorkers: parseInt(maxWorkersInput.value) || 4,
       });
 
       async function recreatePixyelator() {
@@ -130,7 +119,6 @@
           pixyelator.dispose();
           pixyelator = await Pixyelator.fromImage(img, {
             targetCanvas: pixelatedCanvas,
-            maxWorkers: parseInt(maxWorkersInput.value) || 4,
           });
           updatePixelation();
         } catch (err) {
@@ -160,7 +148,6 @@
       xInput.addEventListener("input", updatePixelation);
       yInput.addEventListener("input", updatePixelation);
       grayscaleCheckbox.addEventListener("change", updatePixelation);
-      maxWorkersInput.addEventListener("input", recreatePixyelator);
 
       updatePixelation();
     </script>

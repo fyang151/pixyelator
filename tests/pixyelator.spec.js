@@ -53,7 +53,7 @@ test.describe("Pixyelator OOP API", () => {
     test("should accept constructor options", async ({ page }) => {
       const result = await page.evaluate(async () => {
         try {
-          const options = { maxWorkers: 2, customCanvasId: "test-canvas" };
+          const options = { customCanvasId: "test-canvas" };
           const pixyelator = await window.Pixyelator.fromImage(
             "/tests/fixtures/images/frutiger/input/frutiger.png",
             options
@@ -66,19 +66,6 @@ test.describe("Pixyelator OOP API", () => {
 
       expect(result.success).toBe(true);
       expect(result.instance).toBe(true);
-    });
-
-    test("should reject Promise for invalid max workers", async ({ page }) => {
-      const result = await page.evaluate(async () => {
-        try {
-          await window.Pixyelator.fromImage("/tests/fixtures/images/frutiger/input/frutiger.png", { maxWorkers: -1 });
-          return { success: true }; // Should not reach here
-        } catch (error) {
-          return { success: false, error: error.message };
-        }
-      });
-
-      expect(result.success).toBe(false);
     });
 
     test("should reject Promise for invalid image path", async ({ page }) => {

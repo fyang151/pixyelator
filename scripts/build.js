@@ -39,18 +39,18 @@ async function build() {
   const indexMinified = await minify(indexCode, terserOptions);
 
   const indexMinifiedCode = indexMinified.code.replace(
-    /new URL\("innerWorker\.js"/g,
-    'new URL("innerWorker.min.js"'
+    /new URL\("rgbaWorker\.js"/g,
+    'new URL("rgbaWorker.min.js"'
   );
 
   await fs.writeFile(join(distDir, "index.min.js"), indexMinifiedCode);
 
-  const workerPath = join(projectRoot, "innerWorker.js");
+  const workerPath = join(projectRoot, "rgbaWorker.js");
   const workerCode = await fs.readFile(workerPath, "utf8");
   const workerMinified = await minify(workerCode, terserOptions);
 
   await fs.writeFile(
-    join(distDir, "innerWorker.min.js"),
+    join(distDir, "rgbaWorker.min.js"),
     workerMinified.code
   );
 

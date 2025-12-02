@@ -13,9 +13,14 @@
 
     <script type="module">
       // Load the implemented Pixyelator module
-      const { Pixyelator } = await import("/index.js");
+      // Use ?dist=true to test the built dist version
+      const params = new URLSearchParams(window.location.search);
+      const useDist = params.get("dist") === "true";
+      const path = useDist ? "/dist/index.min.js" : "/index.js";
+
+      const { Pixyelator } = await import(path);
       window.Pixyelator = Pixyelator;
-      console.log("Pixyelator loaded successfully");
+      console.log(`Pixyelator loaded from ${path}`);
     </script>
   </body>
 </html>

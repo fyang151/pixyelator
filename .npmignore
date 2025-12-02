@@ -1,6 +1,6 @@
 *
 !README.md
 !dist/index.min.js
-!dist/innerWorker.min.js
+!dist/rgbaWorker.min.js
 !index.d.ts
 !package.json

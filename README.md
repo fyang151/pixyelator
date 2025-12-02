@@ -1,7 +1,7 @@
 [![npm version](https://img.shields.io/npm/v/pixyelator)](https://www.npmjs.com/package/pixyelator)
 [![bundle size](https://img.shields.io/bundlephobia/minzip/pixyelator)](https://bundlephobia.com/package/pixyelator)
 
-## Pixyelator is a pixelation tool built for the browser.
+## Pixyelator is a tiny pixelation tool built for the browser.
 
 More specifically, it was built for [nearsight.cc](nearsight.cc).
 See another demo [here](https://fyang151.github.io/pixyelator/).

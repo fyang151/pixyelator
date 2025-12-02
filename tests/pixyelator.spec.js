@@ -7,10 +7,13 @@ import { test, expect } from "@playwright/test";
  * NOTE: These tests will fail until the new API is implemented
  */
 
+// Use TEST_DIST=true to test the built dist version
+const distParam = process.env.TEST_DIST === "true" ? "?dist=true" : "";
+
 test.describe("Pixyelator OOP API", () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to test page and wait for Pixyelator to load
-    await page.goto("/tests/fixtures/test-page.html");
+    await page.goto(`/tests/fixtures/test-page.html${distParam}`);
 
     // Wait for the page to load and Pixyelator to be available
     await page.waitForLoadState("networkidle");
@@ -513,7 +516,7 @@ test.describe("Pixyelator OOP API", () => {
       });
 
       // Navigate to the test page AFTER adding init scripts
-      await page.goto("/tests/fixtures/test-page.html");
+      await page.goto(`/tests/fixtures/test-page.html${distParam}`);
       await page.waitForLoadState("networkidle");
     });
 
